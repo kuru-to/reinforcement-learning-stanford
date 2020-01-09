@@ -56,7 +56,18 @@ def policy_evaluation(P, nS, nA, policy, gamma=0.9, tol=1e-3):
 
     ############################
     # YOUR IMPLEMENTATION HERE #
-
+    
+    prev_value_function = np.zeros(nS)
+    for s in range(nS):
+        probability, nextstate, reward, _ = P[s][policy[s]][0]
+        value_function[s] = reward + gamma*(probability*prev_value_function[nextstate] + (1-probability)*prev_value_function[s])
+        
+    while max(abs(value_function - prev_value_function)) >= tol:
+        prev_value_function = value_function.copy()
+        for s in range(nS):
+            probability, nextstate, reward, _ = P[s][policy[s]][0]
+            value_function[s] = reward + gamma*(probability*prev_value_function[nextstate] + (1-probability)*prev_value_function[s])
+    
     ############################
     return value_function
 
@@ -85,7 +96,15 @@ def policy_improvement(P, nS, nA, value_from_policy, policy, gamma=0.9):
 
     ############################
     # YOUR IMPLEMENTATION HERE #
-
+    
+    Q = np.zeros([nS,nA])
+    for s in range(nS):
+        for a in range(nA):
+            probability, nextstate, reward, _ = P[s][a][0]
+            Q[s][a] = reward + gamma*(probability*value_from_policy[nextstate] + (1-probability)*value_from_policy[s])
+            
+    new_policy = Q.argmax(axis=1)
+    
     ############################
     return new_policy
 
@@ -113,7 +132,16 @@ def policy_iteration(P, nS, nA, gamma=0.9, tol=10e-3):
 
     ############################
     # YOUR IMPLEMENTATION HERE #
-
+    
+    prev_policy = policy.copy()
+    value_function = policy_evaluation(P, nS, nA, policy, gamma, tol)
+    policy = policy_improvement(P, nS, nA, value_function, policy, gamma)
+    
+    while np.linalg.norm((policy - prev_policy),ord=1) > 0:
+        prev_policy = policy.copy()
+        value_function = policy_evaluation(P, nS, nA, policy, gamma, tol)
+        policy = policy_improvement(P, nS, nA, value_function, policy, gamma)
+    
     ############################
     return value_function, policy
 
@@ -140,7 +168,23 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
     policy = np.zeros(nS, dtype=int)
     ############################
     # YOUR IMPLEMENTATION HERE #
-
+    prev_value_function = np.zeros(nS)
+    Q = np.zeros([nS,nA])
+    for s in range(nS):
+        for a in range(nA):
+            probability, nextstate, reward, _ = P[s][a][0]
+            Q[s][a] = reward + gamma*(probability*prev_value_function[nextstate] + (1-probability)*prev_value_function[s])
+    value_function = Q.max(axis=1)
+    
+    while max(abs(value_function - prev_value_function)) >= tol:
+        prev_value_function = value_function.copy()
+        for s in range(nS):
+            for a in range(nA):
+                probability, nextstate, reward, _ = P[s][a][0]
+                Q[s][a] = reward + gamma*(probability*prev_value_function[nextstate] + (1-probability)*prev_value_function[s])
+        value_function = Q.max(axis=1)
+    
+    policy = Q.argmax(axis=1)
     ############################
     return value_function, policy
 
